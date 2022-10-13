@@ -30,6 +30,15 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
             return viewModel;
         }
 
+        public async Task<ApplicationUser> GetUser(string id)
+        {
+            return await _userManager.FindByIdAsync(id);
+        }
+        public async Task<ApplicationUser> GetUserByName(string userName)
+        {
+            return await _userManager.FindByNameAsync(userName);
+        }
+
         public async Task<object[]> GetAllUsers()
         {
             List<ApplicationUser> allUsers = await _userManager.Users.ToListAsync();
@@ -45,6 +54,11 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
             {
                 allUsers, users
             };
+        }
+
+        public List<ApplicationUser> GetAllUsers(string id)
+        {
+            return _userManager.Users.Where(u=> u.Id != id).ToList();
         }
 
         public async Task ReassignRole(string role, string userId)

@@ -22,9 +22,9 @@ namespace SD_340_W22SD_Final_Project_Group6.DAL
             _db.Tickets.Remove(ticket);
         }
 
-        public Ticket Get(int id)
+        public async Task<Ticket> Get(int id)
         {
-            return _db.Tickets.Include(t => t.Owner).Include(t => t.TicketWatchers).Include(t => t.Comments).First(t => t.Id == id);
+            return await _db.Tickets.Include(t => t.Owner).Include(t => t.TicketWatchers).Include(t => t.Comments).FirstOrDefaultAsync(t => t.Id == id);
         }
 
         public Ticket Get(Func<Ticket, bool> predicate)
@@ -42,6 +42,8 @@ namespace SD_340_W22SD_Final_Project_Group6.DAL
             return _db.Tickets.Include(t => t.Owner).Include(t => t.TicketWatchers).Include(t => t.Comments).Where(predicate).ToList();
         }
 
+        
+
         public void Save()
         {
             _db.SaveChanges();
@@ -51,6 +53,11 @@ namespace SD_340_W22SD_Final_Project_Group6.DAL
         {
             _db.Tickets.Update(ticket);
             return ticket;
+        }
+
+        Ticket IRepository<Ticket>.Get(int id)
+        {
+            throw new NotImplementedException();
         }
     }
 }

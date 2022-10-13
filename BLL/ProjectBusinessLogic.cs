@@ -21,6 +21,8 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
             repo.Delete(project);
         }
 
+        
+
         public Project GetProject(int id)
         {
             return repo.Get(id);
@@ -39,6 +41,20 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
         public List<Project> GetProjects(Func<Project, bool> predicate)
         {
             return (List<Project>)repo.GetList(predicate);
+        }
+
+        public void AddTicketToProject(Project project, Ticket ticket)
+        {
+            project.Tickets.Add(ticket);
+            repo.Update(project);
+            repo.Save();
+        }
+
+        public void RemoveTicketFromProject(Project project, Ticket ticket)
+        {
+            project.Tickets.Remove(ticket);
+            repo.Update(project);
+            repo.Save();
         }
 
         public Project UpdateProject(Project project)
