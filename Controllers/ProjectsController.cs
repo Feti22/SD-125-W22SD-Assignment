@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using SD_340_W22SD_Final_Project_Group6.BLL;
+using SD_340_W22SD_Final_Project_Group6.DAL;
 using SD_340_W22SD_Final_Project_Group6.Data;
 using SD_340_W22SD_Final_Project_Group6.Models;
 using X.PagedList;
@@ -18,22 +20,31 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
     [Authorize(Roles = "ProjectManager, Developer")]
     public class ProjectsController : Controller
     {
-        private readonly ApplicationDbContext _context;
-        private readonly UserManager<ApplicationUser> _users;
+        //private readonly ApplicationDbContext _context;
+        //private readonly UserManager<ApplicationUser> _users;
+        private readonly ProjectBusinessLogic projectBL;
+        private readonly TicketBusinessLogic ticketBL;
+        private readonly UserProjectBusinessLogic userProjectBL;
+        private UserBusinessLogic userBL;
 
-        public ProjectsController(ApplicationDbContext context, UserManager<ApplicationUser> users)
+        public ProjectsController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
         {
-            _context = context;
-            _users = users;
+            ticketBL = new TicketBusinessLogic(new TicketRepository(context));
+            userBL = new UserBusinessLogic(userManager);
+            projectBL = new ProjectBusinessLogic(new ProjectRepository(context));
+            userProjectBL = new UserProjectBusinessLogic(new UserProjectRepository(context));
+            //commentBL = new CommentBusinessLogic(new CommentRepository(context));
+            //_context = context;
+            //_users = users;
         }
         // GET: Projects
         [Authorize]
         public async Task<IActionResult> Index(string? sortOrder, int? page, bool? sort, string? userId)
         {
             List<Project> SortedProjs = new List<Project>();
-            List<ApplicationUser> allUsers = (List<ApplicationUser>)await _users.GetUsersInRoleAsync("Developer");
-
+            List<ApplicationUser> allUsers = userBL.GetAllUsers(userId);
             List<SelectListItem> users = new List<SelectListItem>();
+
             allUsers.ForEach(au =>
             {
                 users.Add(new SelectListItem(au.UserName, au.Id.ToString()));
@@ -44,102 +55,51 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
                 case "Priority":
                     if (sort == true)
                     {
-                        SortedProjs =
-                        await _context.Projects
-                        .Include(p => p.CreatedBy)
-                        .Include(p => p.AssignedTo)
-                        .ThenInclude(at => at.ApplicationUser)
-                        .Include(p => p.Tickets.OrderByDescending(t => t.TicketPriority))
-                        .ThenInclude(t => t.Owner)
-                        .ToListAsync();
+                        SortedProjs = projectBL.OrderedByPriority();
                     }
                     else
                     {
-                        SortedProjs =
-                        await _context.Projects
-                        .Include(p => p.CreatedBy)
-                        .Include(p => p.AssignedTo)
-                        .ThenInclude(at => at.ApplicationUser)
-                        .Include(p => p.Tickets.OrderBy(t => t.TicketPriority))
-                        .ThenInclude(t => t.Owner)
-                        .ToListAsync();
+                        SortedProjs = projectBL.OrderedByPriorityAsc();
                     }
 
                     break;
                 case "RequiredHrs":
                     if (sort == true)
                     {
-                        SortedProjs =
-                        await _context.Projects
-                        .Include(p => p.CreatedBy)
-                        .Include(p => p.AssignedTo)
-                        .ThenInclude(at => at.ApplicationUser)
-                        .Include(p => p.Tickets.OrderByDescending(t => t.RequiredHours))
-                        .ThenInclude(t => t.Owner)
-                        .ToListAsync();
+                        SortedProjs = projectBL.OrderedByRequiredHours();
                     }
                     else
                     {
-                        SortedProjs =
-                        await _context.Projects
-                        .Include(p => p.CreatedBy)
-                        .Include(p => p.AssignedTo)
-                        .ThenInclude(at => at.ApplicationUser)
-                        .Include(p => p.Tickets.OrderBy(t => t.RequiredHours))
-                        .ThenInclude(t => t.Owner)
-                        .ToListAsync();
+                        SortedProjs = projectBL.OrderedByRequiredHoursAsc();
                     }
 
                     break;
                 case "Completed":
-                    SortedProjs =
-                        await _context.Projects
-                        .Include(p => p.CreatedBy)
-                        .Include(p => p.AssignedTo)
-                        .ThenInclude(at => at.ApplicationUser)
-                        .Include(p => p.Tickets.Where(t => t.Completed == true))
-                        .ThenInclude(t => t.Owner)
-                        .ToListAsync();
+                    SortedProjs = projectBL.GetCompletedProjects();
                     break;
                 default:
                     if (userId != null)
                     {
-                        SortedProjs =
-                        await _context.Projects
-                        .OrderBy(p => p.ProjectName)
-                        .Include(p => p.CreatedBy)
-                        .Include(p => p.AssignedTo)
-                        .ThenInclude(at => at.ApplicationUser)
-                        .Include(p => p.Tickets.Where(t => t.Owner.Id.Equals(userId)))
-                        .ThenInclude(t => t.Owner)
-                        .Include(p => p.Tickets).ThenInclude(t => t.TicketWatchers).ThenInclude(tw => tw.Watcher)
-                        .ToListAsync();
+                        //SortedProjs = projectBL.GetProjects(p => p.Id == Int32.Parse(userId));
+                        SortedProjs = projectBL.GetAllProjects();
                     }
                     else
                     {
-                        SortedProjs =
-                        await _context.Projects
-                        .OrderBy(p => p.ProjectName)
-                        .Include(p => p.CreatedBy)
-                        .Include(p => p.AssignedTo)
-                        .ThenInclude(at => at.ApplicationUser)
-                        .Include(p => p.Tickets)
-                        .ThenInclude(t => t.Owner)
-                        .Include(p => p.Tickets).ThenInclude(t => t.TicketWatchers).ThenInclude(tw => tw.Watcher)
-                        .ToListAsync();
+                        SortedProjs = projectBL.GetAllProjects();
                     }
 
                     break;
             }
             //check if User is PM or Develoer
             var LogedUserName = User.Identity.Name;  // logined user name
-            var user = _context.Users.FirstOrDefault(u => u.UserName == LogedUserName);
-            var rolenames = await _users.GetRolesAsync(user);
+            var user = userBL.GetUserByName(LogedUserName);
+            var rolenames = userBL.ToString();
             var AssinedProject = new List<Project>();
             // geting assined project
             if (rolenames.Contains("Developer"))
             {
-                AssinedProject = SortedProjs.Where(p => p.AssignedTo.Select(projectUser => projectUser.UserId).Contains(user.Id)).ToList();
+                AssinedProject = SortedProjs;
+                //AssinedProject = SortedProjs.Where(p => p.AssignedTo.Select(projectUser => projectUser.UserId).Contains(user.Id)).ToList();
             }
             else
             {
@@ -152,13 +112,12 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
         // GET: Projects/Details/5
         public async Task<IActionResult> Details(int? id)
         {
-            if (id == null || _context.Projects == null)
+            if (id == null || projectBL == null)
             {
                 return NotFound();
             }
 
-            var project = await _context.Projects
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var project = projectBL.GetProject((int)id);
             if (project == null)
             {
                 return NotFound();
@@ -173,9 +132,9 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
             {
                 return NotFound();
             }
-            UserProject currUserProj = await _context.UserProjects.FirstAsync(up => up.ProjectId == projId && up.UserId == id);
-            _context.UserProjects.Remove(currUserProj);
-            await _context.SaveChangesAsync();
+            UserProject currUserProj = userProjectBL.GetUserProject(up => up.ProjectId == projId && up.UserId == id);
+            userProjectBL.Delete(currUserProj);
+            //await _context.SaveChangesAsync();
 
             return RedirectToAction("Edit", new { id = projId });
         }
@@ -184,7 +143,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
         [Authorize(Roles = "ProjectManager")]
         public async Task<IActionResult> CreateAsync()
         {
-            List<ApplicationUser> allUsers = (List<ApplicationUser>)await _users.GetUsersInRoleAsync("Developer");
+            List<ApplicationUser> allUsers = (List<ApplicationUser>)userBL.GetAllUsers("Developer");
 
             List<SelectListItem> users = new List<SelectListItem>();
             allUsers.ForEach(au =>
@@ -208,19 +167,19 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
             {
                 string userName = User.Identity.Name;
 
-                ApplicationUser createdBy = _context.Users.First(u => u.UserName == userName);
-                userIds.ForEach((user) =>
+                ApplicationUser createdBy = await userBL.GetUserByName(userName);
+                userIds.ForEach(async (user) =>
                 {
-                    ApplicationUser currUser = _context.Users.FirstOrDefault(u => u.Id == user);
+                    ApplicationUser currUser = await userBL.GetUser(user);
                     UserProject newUserProj = new UserProject();
                     newUserProj.ApplicationUser = currUser;
                     newUserProj.UserId = currUser.Id;
                     newUserProj.Project = project;
                     project.AssignedTo.Add(newUserProj);
-                    _context.UserProjects.Add(newUserProj);
+                    //_context.UserProjects.Add(newUserProj);
                 });
-                _context.Add(project);
-                await _context.SaveChangesAsync();
+                projectBL.CreateProject(project);
+                //await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
             return View(project);
@@ -230,18 +189,18 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
         [Authorize(Roles = "ProjectManager")]
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null || _context.Projects == null)
+            if (id == null || projectBL == null)
             {
                 return NotFound();
             }
 
-            var project = await _context.Projects.Include(p => p.AssignedTo).FirstAsync(p => p.Id == id);
+            var project = projectBL.GetProject((int)id);
             if (project == null)
             {
                 return NotFound();
             }
 
-            List<ApplicationUser> results = _context.Users.ToList();
+            List<ApplicationUser> results = await userBL.GetAllUsers(project.Id.ToString()).ToListAsync();
 
             List<SelectListItem> currUsers = new List<SelectListItem>();
             results.ForEach(r =>
@@ -270,17 +229,18 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
             {
                 try
                 {
-                    userIds.ForEach((user) =>
+                    userIds.ForEach(async (user) =>
                     {
-                        ApplicationUser currUser = _context.Users.FirstOrDefault(u => u.Id == user);
+                        ApplicationUser currUser = await userBL.GetUserByName(user);
+                        //_context.Users.FirstOrDefault(u => u.Id == user);
                         UserProject newUserProj = new UserProject();
                         newUserProj.ApplicationUser = currUser;
                         newUserProj.UserId = currUser.Id;
                         newUserProj.Project = project;
                         project.AssignedTo.Add(newUserProj);
                     });
-                    _context.Update(project);
-                    await _context.SaveChangesAsync();
+                    projectBL.UpdateProject(project);
+                    //await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -302,13 +262,12 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
         [Authorize(Roles = "ProjectManager")]
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null || _context.Projects == null)
+            if (id == null || projectBL == null)
             {
                 return NotFound();
             }
 
-            var project = await _context.Projects
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var project = projectBL.GetProject((int)id);
             if (project == null)
             {
                 return NotFound();
@@ -323,37 +282,37 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
         [Authorize(Roles = "ProjectManager")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            if (_context.Projects == null)
+            if (projectBL == null)
             {
                 return Problem("Entity set 'ApplicationDbContext.Projects'  is null.");
             }
-            var project = await _context.Projects.Include(p => p.Tickets).FirstAsync(p => p.Id == id);
+            var project =  projectBL.GetProject((int)id);
             if (project != null)
             {
                 List<Ticket> tickets = project.Tickets.ToList();
                 tickets.ForEach(ticket =>
                 {
-                    _context.Tickets.Remove(ticket);
+                    ticketBL.Delete(ticket);
                 });
-                await _context.SaveChangesAsync();
-                List<UserProject> userProjects = _context.UserProjects.Where(up => up.ProjectId == project.Id).ToList();
+                //await _context.SaveChangesAsync();
+                List<UserProject> userProjects = userProjectBL.GetUserProjects(up => up.ProjectId == project.Id).ToList();
                 userProjects.ForEach(userProj =>
                 {
-                    _context.UserProjects.Remove(userProj);
+                    userProjectBL.Delete(userProj);
                 });
 
-                _context.Projects.Remove(project);
+                projectBL.DeleteProject(project);
 
 
             }
 
-            await _context.SaveChangesAsync();
+            //await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
         private bool ProjectExists(int id)
         {
-            return (_context.Projects?.Any(e => e.Id == id)).GetValueOrDefault();
+            return (projectBL.GetAllProjects()?.Any(e => e.Id == id)).GetValueOrDefault();
         }
     }
 }
