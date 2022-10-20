@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using SD_340_W22SD_Final_Project_Group6.DAL;
 using SD_340_W22SD_Final_Project_Group6.Models;
 using System.Security.Claims;
@@ -20,7 +21,14 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
 
         public Project? GetProjectById(int id)
         {
-            return _projectRepo.GetById(id);
+            try
+            {
+               return _projectRepo.GetById(id);
+            }
+            catch
+            {
+                throw new NullReferenceException("No project found with this Id");
+            }
         }
 
         public List<Project> GetAllProjects()
