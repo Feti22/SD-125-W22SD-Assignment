@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using SD_340_W22SD_Final_Project_Group6.Models;
 
 namespace SD_340_W22SD_Final_Project_Group6.BLL
@@ -12,9 +13,20 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
             _userManager = userManager;
         }
 
-        public async Task<ApplicationUser> GetUser(string id)
+        public ApplicationUser GetUser(string userId)
         {
-            return await _userManager.FindByIdAsync(id);
+            try
+            {
+                ApplicationUser currUser = _userManager.Users
+                    .Include(user => user.Tickets)
+                    .Include(user => user.Projects)
+                    .First(user => user.Id == userId);
+                return currUser;
+            }
+            catch
+            {
+                throw new NullReferenceException("User not found");
+            }
         }
 
         public async Task<ApplicationUser> GetUserByName(string userName)
@@ -27,6 +39,36 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
             return _userManager.Users.ToList();
         }
 
+        public async Task<List<ApplicationUser>> GetUsersWithSpecificRole(string role)
+        {
+            if (role == "Developer" || role == "ProjectManager")
+            {
+                return (List<ApplicationUser>)await _userManager.GetUsersInRoleAsync(role);
+            }
+            else
+            {
+                throw new ArgumentException("No users found with this role");
+            }
+        }
+
+        public async Task<List<ApplicationUser>> GetAllUsersWithoutRole()
+        {
+            List<ApplicationUser> usersWithoutRole = new List<ApplicationUser>();
+            List<ApplicationUser> users = _userManager.Users.ToList();
+
+            foreach (ApplicationUser user in users)
+            {
+                List<string> userRoles = (List<string>)await _userManager.GetRolesAsync(user);
+
+                if (userRoles.Count == 0)
+                {
+                    usersWithoutRole.Add(user);
+                }
+            }
+
+            return usersWithoutRole;
+        }
+
         public async Task<List<ApplicationUser>> GetUsersByRole(string role)
         {
             IList<ApplicationUser> users = await _userManager.GetUsersInRoleAsync(role);
@@ -34,45 +76,27 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
             return users.ToList();
         }
 
-        public async Task ReassignRole(string userId, string role)
+        public async Task AssignUserToARole(ApplicationUser user, string role)
         {
-            ApplicationUser? user = await _userManager.FindByIdAsync(userId);
-
-            if (user == null)
+            if (role == "Developer" || role == "ProjectManager")
             {
-                throw new ArgumentException("No user found with this Id");
+                await _userManager.AddToRoleAsync(user, role);
+            }
+            else
+            {
+                throw new ArgumentException("Invalid Role");
             }
 
-            ICollection<string> userRoles = await _userManager.GetRolesAsync(user);
-
-            foreach (string userRole in userRoles)
-            {
-                await _userManager.RemoveFromRoleAsync(user, userRole);
-            }
-
-            await _userManager.AddToRoleAsync(user, role);          
         }
 
-        public async Task<List<string>> GetRoles(string userId)
+        public async Task<List<string>> GetUserRoles(ApplicationUser user)
         {
-            ApplicationUser user = await _userManager.FindByIdAsync(userId);
+            List<string> userRoles = (List<string>)await _userManager.GetRolesAsync(user);
+            return userRoles;
 
-            if (user == null)
-            {
-                throw new ArgumentException("No user found with this Id");
-            }
-
-            IList<string> roles = await _userManager.GetRolesAsync(user);
-
-            return roles.ToList();
         }
 
-        public Task ReassignRole(ApplicationUser currUser, string v)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<List<string>> GetRoles(ApplicationUser currUser)
+        public Task GetUserRoles(string invalidRole)
         {
             throw new NotImplementedException();
         }

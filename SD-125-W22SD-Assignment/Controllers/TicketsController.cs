@@ -161,7 +161,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
             {
                 try
                 {
-                    ApplicationUser currUser = await userBL.GetUser(userId);
+                    ApplicationUser currUser = userBL.GetUser(userId);
                     ticket.Owner = currUser;
                     await ticketBL.UpdateTicket(ticket);
                 }

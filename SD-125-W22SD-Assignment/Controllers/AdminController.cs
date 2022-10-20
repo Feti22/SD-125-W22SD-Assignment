@@ -25,36 +25,36 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
             List<ApplicationUser> developers = await userBL.GetUsersByRole("Developer");
             List<ApplicationUser> allUsers = userBL.GetAllUsers();
 
-            ProjectManagersAndDevelopersViewModels vm = new ProjectManagersAndDevelopersViewModels();
-            vm.pms = projectManager;
-            vm.devs = developers;
-            vm.allUsers = allUsers;
+            ProjectManagersAndDevelopersViewModels vm = new()
+            {
+                pms = projectManager,
+                devs = developers,
+                allUsers = allUsers
+            };
 
             return View(vm);
         }
 
-        public IActionResult ReassignRole()
+        public async Task<IActionResult> UnassignedDevelopers()
         {
-            List<ApplicationUser> allUsers = userBL.GetAllUsers();
-
-            List<SelectListItem> users = new List<SelectListItem>();
-            allUsers.ForEach(u =>
-            {
-                users.Add(new SelectListItem(u.UserName, u.Id.ToString()));
-            });
-            ViewBag.Users = users;
-
-            return View(allUsers);
+            List<ApplicationUser> userWithoutRoles = await userBL.GetAllUsersWithoutRole();
+            return View(userWithoutRoles);
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ReassignRole(string role, string userId)
+        public async Task<IActionResult> AssignDeveloper(string userId)
         {
-            await userBL.ReassignRole(role, userId);
+            ApplicationUser? user = userBL.GetUser(userId);
 
-            return RedirectToAction("Index", "Admin", new { area = "" });
-        }
+            if (user == null)
+            {
+                return BadRequest();
+            }
+
+            await userBL.AssignUserToARole(user, "Developer");
+
+            return RedirectToAction(nameof(UnassignedDevelopers));
+        }        
     }
 }
 

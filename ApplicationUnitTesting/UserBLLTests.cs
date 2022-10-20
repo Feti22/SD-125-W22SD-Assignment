@@ -1,6 +1,6 @@
 ﻿using ApplicationUnitTests;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
+using Moq;
 using SD_340_W22SD_Final_Project_Group6.BLL;
 using SD_340_W22SD_Final_Project_Group6.Models;
 
@@ -9,227 +9,123 @@ namespace ApplicationUnitTesting
     [TestClass]
     public class UserBLLTests
     {
-        [TestMethod]
-        public async Task GetUserByName_ReturnCorrectUserWhenNamesMatch()
-        {
-            var user = new ApplicationUser
-            {
-                UserName = "User1",
-                Id = "UserId1",
-                Email = "test@test.it"
-            };
-            var userManager = MockUserManager.GetMockUserManager(new List<ApplicationUser> { user }, null);
-            var userBusinessLogic = new UserBusinessLogic(userManager);
+        private readonly UserBusinessLogic userBusinessLogic;
+        public readonly UserManager<ApplicationUser> userManager;
 
-            var expectedUser = await userBusinessLogic.GetUserByName(user.UserName);
-
-            Assert.AreEqual(user.UserName, expectedUser.UserName);
-        }
-
-        [TestMethod]
-        public async Task GetUserByName_ReturnNullWhenNoNamesMatch()
-        {
-            var user = new ApplicationUser
-            {
-                UserName = "User1",
-                Id = "UserId1",
-                Email = "test@test.it"
-            };
-            var userManager = MockUserManager.GetMockUserManager(new List<ApplicationUser> { user }, null);
-            var userBusinessLogic = new UserBusinessLogic(userManager);
-
-            var expectedUser = await userBusinessLogic.GetUserByName("UserId2");
-
-            Assert.IsNull(expectedUser);
-        }
-
-        [TestMethod]
-        public async Task GetUserById_ReturnCorrectUserWhenIdsMatch()
-        {
-            var user = new ApplicationUser
-            {
-                UserName = "User1",
-                Id = "UserId1",
-                Email = "test@test.it"
-            };
-            var userManager = MockUserManager.GetMockUserManager(new List<ApplicationUser> { user }, null);
-            var userBusinessLogic = new UserBusinessLogic(userManager);
-
-            var expectedUser = await userBusinessLogic.GetUser(user.Id);
-
-            Assert.AreEqual(user.Id, expectedUser.Id);
-        }
-
-        [TestMethod]
-        public async Task GetUserById_ReturnNullWhenNoIdMatch()
-        {
-            var user = new ApplicationUser
-            {
-                UserName = "User1",
-                Id = "UserId1",
-                Email = "test@test.it"
-            };
-            var userManager = MockUserManager.GetMockUserManager(new List<ApplicationUser> { user }, null);
-            var userBusinessLogic = new UserBusinessLogic(userManager);
-
-            var expectedUser = await userBusinessLogic.GetUser("UserId2");
-
-            Assert.IsNull(expectedUser);
-        }
-
-        [TestMethod]
-        public void GetAllUsersInTheList_ReturnAllUsers()
+        public UserBLLTests()
         {
             var users = new List<ApplicationUser>
             {
-                new ApplicationUser
-                {
-                    UserName = "User1",
-                    Id = "UserId1",
-                    Email = "test@test.it"
-                },
-                new ApplicationUser
-                {
-                    UserName = "User2",
-                    Id = "UserId2",
-                    Email = "test@test.it"
-                },
-                new ApplicationUser
-                {
-                    UserName = "User3",
-                    Id = "UserId3",
-                    Email = "test@test.it"
-                }
+                new ApplicationUser { UserName = "TestUser", Id = "TestUserId", Email = "test@test.it" }
             };
-            var userManager = MockUserManager.GetMockUserManager(users, null);
-            var userBusinessLogic = new UserBusinessLogic(userManager);
 
-            var expectedUsers = userBusinessLogic.GetAllUsers();
+            var mockUserManager = new Mock<MockUserManager>();
 
-            foreach (var user in users)
+            mockUserManager.Setup(x => x.Users).Returns(users.AsQueryable());
+            mockUserManager.Setup(x => x.CreateAsync(It.IsAny<ApplicationUser>(), It.IsAny<string>())).ReturnsAsync(IdentityResult.Success);
+            mockUserManager.Setup(x => x.UpdateAsync(It.IsAny<ApplicationUser>())).ReturnsAsync(IdentityResult.Success);
+            mockUserManager.Setup(um => um.FindByIdAsync(It.IsAny<string>())).ReturnsAsync((string userId) => userManager.Users.SingleOrDefault(u => u.Id == userId));
+            mockUserManager.Setup(um => um.FindByNameAsync(It.IsAny<string>())).ReturnsAsync((string userName) => userManager.Users.SingleOrDefault(u => u.UserName == userName));
+            mockUserManager.Setup(um => um.GetRolesAsync(It.IsAny<ApplicationUser>())).ReturnsAsync(new List<string> { "Admin", "ProjectManager", "Developer" });
+            mockUserManager.Setup(um => um.AddToRoleAsync(It.IsAny<ApplicationUser>(), It.IsAny<string>())).ReturnsAsync(IdentityResult.Success);
+            mockUserManager.Setup(um => um.GetUsersInRoleAsync(It.IsAny<string>())).ReturnsAsync(new List<ApplicationUser> { new ApplicationUser { } });
+            
+            userManager = mockUserManager.Object;
+            userBusinessLogic = new UserBusinessLogic(userManager);
+        }
+
+        [DataRow("TestUser")]
+        [TestMethod]
+        public async Task GetUserByName_ReturnCorrectUserWhenNamesMatch(string name)
+        {
+            ApplicationUser user = await userBusinessLogic.GetUserByName(name);
+
+            Assert.IsNotNull(user);
+        }
+
+        [DataRow("InvalidName")]
+        [TestMethod]
+        public void GetUserByName_InvalidInput_ReturnNullWhenNoNamesMatch(string name)
+        {
+            Assert.ThrowsExceptionAsync<ArgumentException>(async () =>
             {
-                Assert.IsTrue(expectedUsers.Select(user => user.UserName).Contains(user.UserName));
-            }
+                await userBusinessLogic.GetUserByName(name);
+            });
+        }
+
+        [DataRow("TestUserId")]
+        [TestMethod]
+        public Task GetUserById_ValidUserId_ReturnCorrectUserWhenIdsMatch(string userId)
+        {
+            ApplicationUser user = userBusinessLogic.GetUser(userId);
+
+            Assert.IsNotNull(user);
+
+            return Task.CompletedTask;
+        }
+
+        [DataRow("InvalidUserId")]
+        [TestMethod]
+        public void GetUserById_InvalidUserId_ReturnNullWhenNoIdMatch(string userId)
+        {
+            Assert.ThrowsException<NullReferenceException>(() =>
+            {
+                userBusinessLogic.GetUser(userId);
+            });
         }
 
         [TestMethod]
-        public void GetAllUsersInTheList_ReturnEmptyListWhenThereIsNoUser()
+        public async Task GetAllUsersWithoutRolec()
         {
-            var users = new List<ApplicationUser>
-            {
-            };
-            var userManager = MockUserManager.GetMockUserManager(users, null);
-            var userBusinessLogic = new UserBusinessLogic(userManager);
+            List<ApplicationUser> applicationUsers = await userBusinessLogic.GetAllUsersWithoutRole();
 
-            var expectedUsers = userBusinessLogic.GetAllUsers();
-
-            Assert.AreEqual(users.Count, expectedUsers.Count);
+            Assert.IsNotNull(applicationUsers);
         }
 
         [TestMethod]
-        public async Task GetAllUsersWithSpecificRoleAsync_ValidRoleInput()
+        public async Task GetAllUsersWithSpecificRole_ValidRoleInput_ReturnAllUsersWithGivenRoleArgument()
         {
-            var users = new List<ApplicationUser>
-            {
-                new ApplicationUser
-                {
-                    UserName = "User1",
-                    Id = "UserId1",
-                    Email = "test@test.it"
-                },
-                new ApplicationUser
-                {
-                    UserName = "User2",
-                    Id = "UserId2",
-                    Email = "test@test.it"
-                },
-                new ApplicationUser
-                {
-                    UserName = "User3",
-                    Id = "UserId3",
-                    Email = "test@test.it"
-                }
-            };
-
-            var roles = new List<string> { "Admin", "ProjectManager", "Developer" };
-            var userManager = MockUserManager.GetMockUserManager(users, roles);
-            var userBusinessLogic = new UserBusinessLogic(userManager);
-
-            await userBusinessLogic.ReassignRole("UserId3", "ProjectManager");
-            users = await userBusinessLogic.GetUsersByRole("ProjectManager");
+            ApplicationUser user = userBusinessLogic.GetUser("TestUserId");
+            await userBusinessLogic.AssignUserToARole(user, "Developer");
+            List<ApplicationUser> users = await userBusinessLogic.GetUsersWithSpecificRole("Developer");
 
             Assert.IsNotNull(users);
         }
 
-        [DataRow("Visitor")]
+        [DataRow("InavalidRole")]
         [TestMethod]
-        public void ThrowExceptionGettingUsersWithSpecificRoleAsync_InvalidRoleInput(string invalidRole)
+        public void GetAllUsersWithSpecificRole_InvalidRoleInput_ArgumentException(string role)
         {
-            var users = new List<ApplicationUser>
-            {
-                new ApplicationUser
-                {
-                    UserName = "User1",
-                    Id = "UserId1",
-                    Email = "test@test.it"
-                },
-                new ApplicationUser
-                {
-                    UserName = "User2",
-                    Id = "UserId2",
-                    Email = "test@test.it"
-                },
-                new ApplicationUser
-                {
-                    UserName = "User3",
-                    Id = "UserId3",
-                    Email = "test@test.it"
-                }
-            };
-
-            var roles = new List<string> { "Admin", "ProjectManager", "Developer" };
-            var userManager = MockUserManager.GetMockUserManager(users, roles);
-            var userBusinessLogic = new UserBusinessLogic(userManager);
-
             Assert.ThrowsExceptionAsync<ArgumentException>(async () =>
             {
-                await userBusinessLogic.GetRoles(invalidRole);
+                await userBusinessLogic.GetUserRoles(role);
             });
         }
 
+        [DataRow("TestUserId", 3)]
         [TestMethod]
-        public async Task ThrowExceptionGettingRolesAndNoUserIdMatch()
+        public async Task AssignUserToARole_ValidInput(string userId, int expected)
         {
-            var users = new List<ApplicationUser>
-            {
-                new ApplicationUser
-                {
-                    UserName = "User1",
-                    Id = "UserId1",
-                    Email = "test@test.it"
-                },
-                new ApplicationUser
-                {
-                    UserName = "User2",
-                    Id = "UserId2",
-                    Email = "test@test.it"
-                },
-                new ApplicationUser
-                {
-                    UserName = "User3",
-                    Id = "UserId3",
-                    Email = "test@test.it"
-                }
-            };
+            ApplicationUser user = userBusinessLogic.GetUser(userId);
+            await userBusinessLogic.AssignUserToARole(user, "ProjectManager");
+            List<string> roles = await userBusinessLogic.GetUserRoles(user);
+            int actualCount = roles.Count;
 
-            var roles = new List<string> { "Admin", "ProjectManager", "Developer" };
-            var userManager = MockUserManager.GetMockUserManager(users, roles);
-            var userBusinessLogic = new UserBusinessLogic(userManager);
+            Assert.AreEqual(expected, actualCount);
+        }
 
-            await Assert.ThrowsExceptionAsync<ArgumentException>(async () =>
+        [DataRow("TestUserId")]
+        [TestMethod]
+        public Task AssignUserToARole_InvalidRole_ArgumentException(string userId)
+        {
+            ApplicationUser user = userBusinessLogic.GetUser(userId);
+
+            Assert.ThrowsExceptionAsync<ArgumentException>(async () =>
             {
-                await userBusinessLogic.GetRoles("UserId5");
+                await userBusinessLogic.AssignUserToARole(user, "InvalidRole");
             });
+
+            return Task.CompletedTask;
         }
     }
 }
