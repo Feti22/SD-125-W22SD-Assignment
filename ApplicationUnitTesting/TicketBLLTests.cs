@@ -71,14 +71,16 @@ namespace ApplicationUnitTesting
                 new Comment{Id = 1, Description = "Comment 1", Ticket = ticketData.First(t => t.Id == 1)},
                 new Comment{Id = 2, Description = "Comment 2", Ticket = ticketData.First(t => t.Id == 2)},
                 new Comment{Id = 3, Description = "Comment 3", Ticket = ticketData.First(t => t.Id == 3)},
-                }.AsQueryable();
+                };
+            var newCommentData = commentData.AsQueryable();
 
             var commentMockDbSet = new Mock<DbSet<Comment>>();
-
-            commentMockDbSet.As<IQueryable<Comment>>().Setup(m => m.Provider).Returns(commentData.Provider);
-            commentMockDbSet.As<IQueryable<Comment>>().Setup(m => m.Expression).Returns(commentData.Expression);
-            commentMockDbSet.As<IQueryable<Comment>>().Setup(m => m.ElementType).Returns(commentData.ElementType);
-            commentMockDbSet.As<IQueryable<Comment>>().Setup(m => m.GetEnumerator()).Returns(commentData.GetEnumerator());
+            
+            commentMockDbSet.As<IQueryable<Comment>>().Setup(m => m.Provider).Returns(newCommentData.Provider);
+            commentMockDbSet.As<IQueryable<Comment>>().Setup(m => m.Expression).Returns(newCommentData.Expression);
+            commentMockDbSet.As<IQueryable<Comment>>().Setup(m => m.ElementType).Returns(newCommentData.ElementType);
+            commentMockDbSet.As<IQueryable<Comment>>().Setup(m => m.GetEnumerator()).Returns(newCommentData.GetEnumerator());
+            commentMockDbSet.Setup(d => d.Add(It.IsAny<Comment>())).Callback<Comment>((s) => commentData.Add(s));
 
             var commentMockContext = new Mock<ApplicationDbContext>();
             commentMockContext.Setup(m => m.Comments).Returns(commentMockDbSet.Object);
@@ -129,13 +131,7 @@ namespace ApplicationUnitTesting
             Assert.AreEqual(expectedTotal, actualCount);
         }
 
-        [DataRow(1)]
-        [TestMethod]
-        public void GetCommentById_ValidInput(int expectedId)
-        {
-            int actualId = commentBusinessLogic.GetCommentById(1).Id;
-            Assert.AreEqual(expectedId, actualId);
-        }
+        
 
         [DataRow(2)]
         [TestMethod]
@@ -163,11 +159,18 @@ namespace ApplicationUnitTesting
             Assert.AreEqual(expectedCount, ticketBusinessLogic.GetAllTickets().Count);
 
         }
-
+        [DataRow(1)]
         [TestMethod]
-        public void AddComment()
+        public void AddComment(int expectedCommentCount)
         {
+            Comment comment = new Comment();
+            comment.Id = 1;
+            comment.Description = "test comment";
+            commentBusinessLogic.AddComment(comment);
+            Assert.AreEqual(expectedCommentCount, commentBusinessLogic.GetAllComments().Count);
 
         }
+
+        
     }
 }

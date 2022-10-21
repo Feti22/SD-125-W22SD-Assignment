@@ -86,18 +86,25 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
             ApplicationUser user = await _userManager.FindByIdAsync(userId);
             Ticket? ticket = _ticketRepo.GetById(ticketId);
 
-            if (ticket == null)
+            try
+            {
+                Comment comment = new Comment();
+                comment.CreatedBy = user;
+                comment.Description = description;
+                comment.Ticket = ticket;
+                _ticketRepo.AddCommentToTicket(ticketId, comment);
+                _ticketRepo.Update(ticket);
+                _ticketRepo.Save();
+
+
+                _commentRepo.Create(comment);
+                _commentRepo.Save();
+            }
+            catch
             {
                 throw new ArgumentException("No ticket found with this Id");
             }
-
-            Comment comment = new Comment();
-            comment.CreatedBy = user;
-            comment.Description = description;
-            comment.Ticket = ticket;
-
-            _commentRepo.Create(comment);
-            _commentRepo.Save();
+            
         }
 
         public async Task AddTicketToWatcher(string userId, int ticketId)

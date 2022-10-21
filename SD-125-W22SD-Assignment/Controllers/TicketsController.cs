@@ -160,8 +160,8 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
         [HttpPost]
         public async Task<IActionResult> CommentTask(int? TaskId, string? TaskText)
         {
-            if (TaskId != null || TaskText != null)
-            {
+            //if (TaskId != null || TaskText != null)
+            //{
                 try
                 {
                     ApplicationUser user = await userBL.GetUserByName(User.Identity.Name);
@@ -170,12 +170,12 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
 
                     return RedirectToAction("Details", new { Id });
                 }
-                catch (Exception)
+                catch
                 {
                     return RedirectToAction("Error", "Home");
                 }
-            }
-            return RedirectToAction("Index");
+            //}
+            //return RedirectToAction("Index");
         }
 
         public async Task<IActionResult> UpdateHrs(int? id, int? hrs)
