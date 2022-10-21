@@ -21,7 +21,14 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
 
         public Ticket? GetTicketById(int id)
         {
-            return _ticketRepo.GetById(id);
+            try
+            {
+                return _ticketRepo.GetById(id);
+            }
+            catch
+            {
+                throw new NullReferenceException("No ticket found with this Id");
+            }
         }
 
         public List<Ticket> GetAllTickets()
@@ -54,15 +61,21 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
 
         public void DeleteTicket(int id)
         {
-            Ticket? ticket = _ticketRepo.GetById(id);
+            try
+            {
+                Ticket? ticket = _ticketRepo.GetById(id);
+                if (ticket == null)
+                {
+                    throw new ArgumentException("No ticket found with this Id");
+                }
 
-            if (ticket == null)
+                _ticketRepo.Delete(ticket);
+                _ticketRepo.Save();
+            }
+            catch
             {
                 throw new ArgumentException("No ticket found with this Id");
             }
-
-            _ticketRepo.Delete(ticket);
-            _ticketRepo.Save();
         }
 
         public async Task AddCommentToTicket(string userId, int ticketId, string description)
@@ -70,18 +83,24 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
             ApplicationUser user = await _userManager.FindByIdAsync(userId);
             Ticket? ticket = _ticketRepo.GetById(ticketId);
 
-            if (ticket == null)
+            try
+            {
+                Comment comment = new Comment();
+                comment.CreatedBy = user;
+                comment.Description = description;
+                comment.Ticket = ticket;
+                _ticketRepo.AddCommentToTicket(ticketId, comment);
+                _ticketRepo.Update(ticket);
+                _ticketRepo.Save();
+
+
+                _commentRepo.Create(comment);
+                _commentRepo.Save();
+            }
+            catch
             {
                 throw new ArgumentException("No ticket found with this Id");
             }
-
-            Comment comment = new Comment();
-            comment.CreatedBy = user;
-            comment.Description = description;
-            comment.Ticket = ticket;
-
-            _commentRepo.Create(comment);
-            _commentRepo.Save();
         }
 
         public async Task AddTicketToWatcher(string userId, int ticketId)

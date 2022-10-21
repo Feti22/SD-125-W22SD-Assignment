@@ -7,7 +7,6 @@ using SD_340_W22SD_Final_Project_Group6.BLL;
 using SD_340_W22SD_Final_Project_Group6.DAL;
 using SD_340_W22SD_Final_Project_Group6.Data;
 using SD_340_W22SD_Final_Project_Group6.Models;
-using SD_340_W22SD_Final_Project_Group6.Models.ViewModel;
 
 namespace SD_340_W22SD_Final_Project_Group6.Controllers
 {
@@ -24,8 +23,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
             userBL = new UserBusinessLogic(userManager);
             projectBL = new ProjectBusinessLogic(new ProjectRepository(context), new TicketRepository(context), userManager);
             ticketBL = new TicketBusinessLogic(userManager, new ProjectRepository(context), new TicketRepository(context), new CommentRepository(context));
-            commentBL = new CommentBusinessLogic(new CommentRepository(context), new ProjectRepository(context), new TicketRepository(context), userManager);
-
+            commentBL = new CommentBusinessLogic(new CommentRepository(context));
         }
 
         // GET: Tickets
@@ -83,9 +81,6 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
             return View();
         }
 
-        // POST: Tickets/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "ProjectManager")]
@@ -129,24 +124,6 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
             return View(ticket);
         }
 
-        //[Authorize(Roles = "ProjectManager")]
-        //public async Task<IActionResult> RemoveAssignedUser(string id, int ticketId)
-        //{
-        //    if (id == null)
-        //    {
-        //        return NotFound();
-        //    }
-        //    Ticket currTicket = ticketBL.GetTicket(ticketId);
-        //    ApplicationUser currUser = await userBL.GetUser(id);
-        //    currTicket.Owner = currUser;
-        //    ticketBL.UpdateTicket(currTicket);
-
-        //    return RedirectToAction("Edit", new { id = ticketId });
-        //}
-
-        // POST: Tickets/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "ProjectManager")]
@@ -179,22 +156,18 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
         [HttpPost]
         public async Task<IActionResult> CommentTask(int? TaskId, string? TaskText)
         {
-            if (TaskId != null || TaskText != null)
+            try
             {
-                try
-                {
-                    ApplicationUser user = await userBL.GetUserByName(User.Identity.Name);
-                    await ticketBL.AddCommentToTicket(user.Id, (int)TaskId, TaskText);
-                    int Id = (int)TaskId;
+                ApplicationUser user = await userBL.GetUserByName(User.Identity.Name);
+                await ticketBL.AddCommentToTicket(user.Id, (int)TaskId, TaskText);
+                int Id = (int)TaskId;
 
-                    return RedirectToAction("Details", new { Id });
-                }
-                catch (Exception)
-                {
-                    return RedirectToAction("Error", "Home");
-                }
+                return RedirectToAction("Details", new { Id });
             }
-            return RedirectToAction("Index");
+            catch
+            {
+                return RedirectToAction("Error", "Home");
+            }
         }
 
         public async Task<IActionResult> UpdateHrs(int? id, int? hrs)

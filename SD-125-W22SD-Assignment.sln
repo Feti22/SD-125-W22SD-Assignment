@@ -5,7 +5,7 @@ VisualStudioVersion = 17.2.32519.379
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SD-125-W22SD-Assignment", "SD-125-W22SD-Assignment\SD-125-W22SD-Assignment.csproj", "{0884F391-1DAC-4715-8239-E7E0C4DD2BF0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApplicationUnitTesting", "ApplicationUnitTesting\ApplicationUnitTesting.csproj", "{6F443447-067A-45C5-8337-0A209402D991}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApplicationUnitTesting", "ApplicationUnitTesting\ApplicationUnitTesting.csproj", "{6F443447-067A-45C5-8337-0A209402D991}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

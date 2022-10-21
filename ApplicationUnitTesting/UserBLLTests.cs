@@ -21,9 +21,9 @@ namespace ApplicationUnitTesting
 
             var mockUserManager = new Mock<MockUserManager>();
 
-            mockUserManager.Setup(x => x.Users).Returns(users.AsQueryable());
-            mockUserManager.Setup(x => x.CreateAsync(It.IsAny<ApplicationUser>(), It.IsAny<string>())).ReturnsAsync(IdentityResult.Success);
-            mockUserManager.Setup(x => x.UpdateAsync(It.IsAny<ApplicationUser>())).ReturnsAsync(IdentityResult.Success);
+            mockUserManager.Setup(um => um.Users).Returns(users.AsQueryable());
+            mockUserManager.Setup(um => um.CreateAsync(It.IsAny<ApplicationUser>(), It.IsAny<string>())).ReturnsAsync(IdentityResult.Success);
+            mockUserManager.Setup(um => um.UpdateAsync(It.IsAny<ApplicationUser>())).ReturnsAsync(IdentityResult.Success);
             mockUserManager.Setup(um => um.FindByIdAsync(It.IsAny<string>())).ReturnsAsync((string userId) => userManager.Users.SingleOrDefault(u => u.Id == userId));
             mockUserManager.Setup(um => um.FindByNameAsync(It.IsAny<string>())).ReturnsAsync((string userName) => userManager.Users.SingleOrDefault(u => u.UserName == userName));
             mockUserManager.Setup(um => um.GetRolesAsync(It.IsAny<ApplicationUser>())).ReturnsAsync(new List<string> { "Admin", "ProjectManager", "Developer" });
