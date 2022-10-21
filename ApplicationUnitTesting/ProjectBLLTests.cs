@@ -38,12 +38,14 @@ namespace ApplicationUnitTesting
             userBusinessLogic = new UserBusinessLogic(userManager);
 
 
-            var projects = new List<Project>
+            var InitialProjects = new List<Project>
                 {
-                    new Project{ Id = 1, ProjectName = "FirstProject" ,AssignedTo = new HashSet<UserProject>()},
+                    new Project{ Id = 1, ProjectName = "FirstProject" ,AssignedTo = new HashSet<UserProject>(),},
                     new Project{ Id = 2, ProjectName = "SecondProject" ,AssignedTo = new HashSet<UserProject>()},
                     new Project{ Id = 3, ProjectName = "ThirdProject" , AssignedTo = new HashSet<UserProject>()},
-                }.AsQueryable();
+                };
+
+            var projects = InitialProjects.AsQueryable();
 
             var MockProject = new Mock<DbSet<Project>>();
 
@@ -51,6 +53,8 @@ namespace ApplicationUnitTesting
             MockProject.As<IQueryable<Project>>().Setup(m => m.Expression).Returns(projects.Expression);
             MockProject.As<IQueryable<Project>>().Setup(m => m.ElementType).Returns(projects.ElementType);
             MockProject.As<IQueryable<Project>>().Setup(m => m.GetEnumerator()).Returns(projects.GetEnumerator());
+            MockProject.Setup(m => m.Add(It.IsAny<Project>())).Callback<Project>((s) => InitialProjects.Add(s));
+            MockProject.Setup(m => m.Remove(It.IsAny<Project>())).Callback<Project>((s) => InitialProjects.Remove(s));
 
             var projMockContext = new Mock<ApplicationDbContext>();
             projMockContext.Setup(m => m.Projects).Returns(MockProject.Object);
@@ -119,28 +123,71 @@ namespace ApplicationUnitTesting
             Assert.AreEqual(actualCount, expectedTotal);
         }
 
-        //[DataRow(1, 3)]
-        //[TestMethod]
-        //public async Task AssignUsers_ValidInput(int projectId, int expectedTotal)
-        //{
-        //    List<string> usersAssignedId = new List<string> { "1", "2" };
-        //    await projectBusinessLogic.AssignUsers(projectId, usersAssignedId);
-        //    Project project = projectBusinessLogic.GetProjectById(projectId);
-        //    int actualCount = project.AssignedTo.Count;
+        [DataRow(1,4)]
+        [TestMethod]
+        public void DeleteProject_InvalidInput(int projectId, int expectedTotal)
+        {
+            projectBusinessLogic.DeleteProject(projectId);
+            int actualCount = projectBusinessLogic.GetAllProjects().Count;
 
-        //    Assert.AreEqual(expectedTotal, actualCount);
-        //}
+            Assert.AreEqual(actualCount, expectedTotal);
+        }
 
-        //[DataRow(1, 3)]
-        //[TestMethod]
-        //public async Task AssignUsers_ValidInput_ThrowNullReferenceException(int projectId, int expectedTotal)
-        //{
-        //    List<string> usersAssignedId = new List<string> { "1", "2" };
-        //    await projectBusinessLogic.AssignUsers(projectId, usersAssignedId);
-        //    Assert.ThrowsException<NullReferenceException>(() =>
-        //    {
-        //        projectBusinessLogic.AssignUsers(projectId, new List<string>() { "1", "2" });
-        //    });
-        //}
+        [DataRow(4)]
+        [TestMethod]
+        public void DeleteProject_InvalidInput_ReturnNullWhenNoIdMatch(int projectId)
+        {
+            Assert.ThrowsException<NullReferenceException>(() =>
+            {
+                projectBusinessLogic.DeleteProject(projectId);
+            });
+        }
+
+        [DataRow(1, 3)]
+        [TestMethod]
+        public async Task AssignUsers_ValidInput(int projectId, int expectedTotal)
+        {
+            List<string> usersAssignedId = new List<string> { "1", "2" };
+            await projectBusinessLogic.AssignUsers(projectId, usersAssignedId);
+            Project project = projectBusinessLogic.GetProjectById(projectId);
+            int actualCount = project.AssignedTo.Count;
+
+            Assert.AreEqual(expectedTotal, actualCount);
+        }
+
+        [DataRow(4, 3)]
+        [TestMethod]
+        public async Task AssignUsers_InValidInput_ThrowNullReferenceException(int projectId, int expectedTotal)
+        {
+            List<string> usersAssignedId = new List<string> { "1", "2" };
+            await projectBusinessLogic.AssignUsers(projectId, usersAssignedId);
+            Assert.ThrowsException<NullReferenceException>(() =>
+            {
+                projectBusinessLogic.AssignUsers(projectId, new List<string>() { "1", "2" });
+            });
+        }
+
+        [DataRow(1, 3 , 0)]
+        [TestMethod]
+        public void RemoveAssignedUser_ValidInput(int projectId, string userId, int expectedTotal)
+        {
+            projectBusinessLogic.RemoveAssignedUser(projectId, userId);
+            Project project = projectBusinessLogic.GetProjectById(projectId);
+            int actualCount = project.AssignedTo.Count;
+
+            Assert.AreEqual(expectedTotal, actualCount);
+        }
+
+        [DataRow(4, 3, 0)]
+        [TestMethod]
+        public void RemoveAssignedUser_InValidInput_ThrowNullWhenNoIdMatch(int projectId, string userId, int expectedTotal)
+        {           
+            Project project = projectBusinessLogic.GetProjectById(projectId);
+            int actualCount = project.AssignedTo.Count;
+            Assert.ThrowsException<NullReferenceException>(() =>
+            {
+                projectBusinessLogic.RemoveAssignedUser(projectId, userId);
+            });
+        }
     }
 }
