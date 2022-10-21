@@ -61,15 +61,24 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
 
         public void DeleteTicket(int id)
         {
-            Ticket? ticket = _ticketRepo.GetById(id);
+            try
+            {
+                Ticket? ticket = _ticketRepo.GetById(id);
+                if (ticket == null)
+                {
+                    throw new ArgumentException("No ticket found with this Id");
+                }
 
-            if (ticket == null)
+                _ticketRepo.Delete(ticket);
+                _ticketRepo.Save();
+            }
+            catch
             {
                 throw new ArgumentException("No ticket found with this Id");
             }
+            
 
-            _ticketRepo.Delete(ticket);
-            _ticketRepo.Save();
+            
         }
 
         public async Task AddCommentToTicket(string userId, int ticketId, string description)

@@ -145,14 +145,29 @@ namespace ApplicationUnitTesting
             ticketBusinessLogic.DeleteTicket(1);
             Assert.AreEqual(expectedCount, ticketBusinessLogic.GetAllTickets().Count);
         }
-        
+        [DataRow(5)]
         [TestMethod]
-        public void DeleteTicket_InvalidInput_ThrowNullExceptionIfTicketNotFound()
+        public void DeleteTicket_InvalidInput_ThrowNullExceptionIfTicketNotFound(int invalidInput)
         {
             Assert.ThrowsException<ArgumentException>(() =>
             {
-                ticketBusinessLogic.DeleteTicket(5);
+                ticketBusinessLogic.DeleteTicket(invalidInput);
             });
+        }
+        [DataRow(3)] //since we already deleted one ticket.
+        [TestMethod]
+        public void AddTicket(int expectedCount)
+        {
+            Ticket ticket = new Ticket { Id = 1, Project = projectBusinessLogic.GetProjectById(1), TicketPriority = Ticket.Priority.High, RequiredHours = 12, Title = "Ticket test" };
+            ticketBusinessLogic.CreateTicket(ticket, 1, "UserId1");
+            Assert.AreEqual(expectedCount, ticketBusinessLogic.GetAllTickets().Count);
+
+        }
+
+        [TestMethod]
+        public void AddComment()
+        {
+
         }
     }
 }
