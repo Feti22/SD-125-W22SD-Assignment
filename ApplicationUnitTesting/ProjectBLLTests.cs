@@ -13,34 +13,17 @@ namespace ApplicationUnitTesting
     public class ProjectBLLTests
     {
         private readonly ProjectBusinessLogic projectBusinessLogic;
-        private readonly UserBusinessLogic userBusinessLogic;
         public readonly UserManager<ApplicationUser> userManager;
         public readonly UserProjectBusinessLogic userProjectBL;
         public TicketRepository ticketRepository;
 
         public ProjectBLLTests()
         {
-            var users = new List<ApplicationUser>
-            {
-                new ApplicationUser { UserName = "TestUser", Id = "TestUserId", Email = "test@test.it" }
-            };
-
-            var mockUserManager = new Mock<MockUserManager>();
-
-            mockUserManager.Setup(x => x.Users).Returns(users.AsQueryable());
-            mockUserManager.Setup(x => x.CreateAsync(It.IsAny<ApplicationUser>(), It.IsAny<string>())).ReturnsAsync(IdentityResult.Success);
-            mockUserManager.Setup(x => x.UpdateAsync(It.IsAny<ApplicationUser>())).ReturnsAsync(IdentityResult.Success);
-            mockUserManager.Setup(um => um.FindByIdAsync(It.IsAny<string>())).ReturnsAsync((string userId) => userManager.Users.SingleOrDefault(u => u.Id == userId));
-
-            userManager = mockUserManager.Object;
-            userBusinessLogic = new UserBusinessLogic(userManager);
-
-
             var projects = new List<Project>
                 {
-                    new Project{ Id = 1, ProjectName = "FirstProject" },
-                    new Project{ Id = 2, ProjectName = "SecondProject" },
-                    new Project{ Id = 3, ProjectName = "ThirdProject" },
+                    new Project{ Id = 1, ProjectName = "First Project" },
+                    new Project{ Id = 2, ProjectName = "Second Project" },
+                    new Project{ Id = 3, ProjectName = "Third Project" },
                 }.AsQueryable();
 
             var MockProject = new Mock<DbSet<Project>>();
@@ -84,5 +67,14 @@ namespace ApplicationUnitTesting
             Assert.AreEqual(expectedTotal, actualCount);
         }
 
+        [DataRow(4)]
+        [TestMethod]
+        public void CreateNewProject_ValidInput(int expected)
+        {
+            projectBusinessLogic.CreateProject(new Project { Id = 4, ProjectName = "Fourth Project" });
+            int projectsCount = projectBusinessLogic.GetAllProjects().Count;
+
+            Assert.AreEqual(expected, projectsCount);
+        }
     }
 }

@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using SD_340_W22SD_Final_Project_Group6.DAL;
 using SD_340_W22SD_Final_Project_Group6.Models;
-using System.Security.Claims;
 
 namespace SD_340_W22SD_Final_Project_Group6.BLL
 {
@@ -36,23 +35,9 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
             return (List<Project>)_projectRepo.GetAll();
         }
 
-        public async Task CreateProject(ClaimsPrincipal user, Project project, List<string> usersAssignedId)
+        public void CreateProject(Project project)
         {
-            project.CreatedBy = await _userManager.GetUserAsync(user);
-
-            foreach (string userId in usersAssignedId)
-            {
-                ApplicationUser assignedUser = await _userManager.FindByIdAsync(userId);
-
-                UserProject userProject = new UserProject();
-                userProject.ApplicationUser = assignedUser;
-                userProject.UserId = assignedUser.Id;
-                userProject.Project = project;
-
-                project.AssignedTo.Add(userProject);
-                _projectRepo.Create(project);
-            }
-
+            _projectRepo.Create(project);
             _projectRepo.Save();
         }
 
