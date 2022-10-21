@@ -8,7 +8,6 @@ using SD_340_W22SD_Final_Project_Group6.Models;
 
 namespace ApplicationUnitTesting
 {
-
     [TestClass]
     public class TicketBLLTests
     {
@@ -58,6 +57,7 @@ namespace ApplicationUnitTesting
             ticketMockDbSet.As<IQueryable<Ticket>>().Setup(m => m.ElementType).Returns(ticketData.ElementType);
             ticketMockDbSet.As<IQueryable<Ticket>>().Setup(m => m.GetEnumerator()).Returns(() => ticketData.GetEnumerator());
             ticketMockDbSet.Setup(d => d.Add(It.IsAny<Ticket>())).Callback<Ticket>((s) => initialTicketData.Add(s));
+            ticketMockDbSet.Setup(d => d.Remove(It.IsAny<Ticket>())).Callback<Ticket>((s) => initialTicketData.Remove(s));
 
             var ticketMockContext = new Mock<ApplicationDbContext>();
             ticketMockContext.Setup(m => m.Tickets).Returns(ticketMockDbSet.Object);
@@ -69,19 +69,21 @@ namespace ApplicationUnitTesting
                 new Comment{Id = 1, Description = "Comment 1", Ticket = ticketData.First(t => t.Id == 1)},
                 new Comment{Id = 2, Description = "Comment 2", Ticket = ticketData.First(t => t.Id == 2)},
                 new Comment{Id = 3, Description = "Comment 3", Ticket = ticketData.First(t => t.Id == 3)},
-                }.AsQueryable();
+                };
+            var newCommentData = commentData.AsQueryable();
 
             var commentMockDbSet = new Mock<DbSet<Comment>>();
 
-            commentMockDbSet.As<IQueryable<Comment>>().Setup(m => m.Provider).Returns(commentData.Provider);
-            commentMockDbSet.As<IQueryable<Comment>>().Setup(m => m.Expression).Returns(commentData.Expression);
-            commentMockDbSet.As<IQueryable<Comment>>().Setup(m => m.ElementType).Returns(commentData.ElementType);
-            commentMockDbSet.As<IQueryable<Comment>>().Setup(m => m.GetEnumerator()).Returns(commentData.GetEnumerator());
+            commentMockDbSet.As<IQueryable<Comment>>().Setup(m => m.Provider).Returns(newCommentData.Provider);
+            commentMockDbSet.As<IQueryable<Comment>>().Setup(m => m.Expression).Returns(newCommentData.Expression);
+            commentMockDbSet.As<IQueryable<Comment>>().Setup(m => m.ElementType).Returns(newCommentData.ElementType);
+            commentMockDbSet.As<IQueryable<Comment>>().Setup(m => m.GetEnumerator()).Returns(newCommentData.GetEnumerator());
+            commentMockDbSet.Setup(d => d.Add(It.IsAny<Comment>())).Callback<Comment>((s) => commentData.Add(s));
 
             var commentMockContext = new Mock<ApplicationDbContext>();
             commentMockContext.Setup(m => m.Comments).Returns(commentMockDbSet.Object);
 
-            commentBusinessLogic = new CommentBusinessLogic(new CommentRepository(commentMockContext.Object), projectRepository, ticketRepository, userManager);
+            commentBusinessLogic = new CommentBusinessLogic(new CommentRepository(commentMockContext.Object));
 
             var userData = new List<ApplicationUser>
             {
@@ -102,7 +104,7 @@ namespace ApplicationUnitTesting
 
             userBusinessLogic = new UserBusinessLogic(userManager);
         }
-                
+
         [DataRow(1)]
         [TestMethod]
         public void GetTicketById_ValidInput(int expectedId)
@@ -116,8 +118,54 @@ namespace ApplicationUnitTesting
         {
             Assert.ThrowsException<NullReferenceException>(() =>
             {
-                ticketBusinessLogic.GetTicketById(10);
+                ticketBusinessLogic.GetTicketById(4);
             });
-        }        
+        }
+
+        [DataRow(3)]
+        [TestMethod]
+        public void GetAllTickets(int expectedTotal)
+        {
+            int actualCount = ticketBusinessLogic.GetAllTickets().Count;
+            Assert.AreEqual(expectedTotal, actualCount);
+        }
+
+        [DataRow(2)]
+        [TestMethod]
+        public void DeleteTicket(int expectedCount)
+        {
+            ticketBusinessLogic.DeleteTicket(1);
+            Assert.AreEqual(expectedCount, ticketBusinessLogic.GetAllTickets().Count);
+        }
+
+        [DataRow(5)]
+        [TestMethod]
+        public void DeleteTicket_InvalidInput_ThrowNullExceptionIfTicketNotFound(int invalidInput)
+        {
+            Assert.ThrowsException<ArgumentException>(() =>
+            {
+                ticketBusinessLogic.DeleteTicket(invalidInput);
+            });
+        }
+
+        [DataRow(3)] //since we already deleted one ticket.
+        [TestMethod]
+        public void AddTicket(int expectedCount)
+        {
+            Ticket ticket = new Ticket { Id = 1, Project = projectBusinessLogic.GetProjectById(1), TicketPriority = Ticket.Priority.High, RequiredHours = 12, Title = "Ticket test" };
+            ticketBusinessLogic.CreateTicket(ticket, 1, "UserId1");
+            Assert.AreEqual(expectedCount, ticketBusinessLogic.GetAllTickets().Count);
+        }
+
+        [DataRow(1)]
+        [TestMethod]
+        public void AddComment(int expectedCommentCount)
+        {
+            Comment comment = new Comment();
+            comment.Id = 1;
+            comment.Description = "test comment";
+            commentBusinessLogic.AddComment(comment);
+            Assert.AreEqual(expectedCommentCount, commentBusinessLogic.GetAllComments().Count);
+        }
     }
 }

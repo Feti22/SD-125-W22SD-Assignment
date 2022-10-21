@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using SD_340_W22SD_Final_Project_Group6.DAL;
 using SD_340_W22SD_Final_Project_Group6.Models;
 
@@ -10,8 +9,6 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
         private readonly ProjectRepository _projectRepo;
         private readonly TicketRepository _ticketRepo;
         private readonly UserManager<ApplicationUser> _userManager;
-        private ProjectRepository projectRepository;
-        private UserManager<object> userManager;
 
         public ProjectBusinessLogic(ProjectRepository projectRepository, TicketRepository ticketRepository, UserManager<ApplicationUser> userManager)
         {
@@ -37,8 +34,16 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
             return (List<Project>)_projectRepo.GetAll();
         }
 
-        public void CreateProject(Project project)
+        public async Task CreateProject(Project project, string userId)
         {
+            ApplicationUser assignedUser = await _userManager.FindByIdAsync(userId);
+
+            UserProject userProject = new UserProject();
+            userProject.ApplicationUser = assignedUser;
+            userProject.UserId = assignedUser.Id;
+            userProject.Project = project;
+
+            project.AssignedTo.Add(userProject);
             _projectRepo.Create(project);
             _projectRepo.Save();
         }

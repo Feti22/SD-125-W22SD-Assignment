@@ -42,16 +42,6 @@ namespace SD_340_W22SD_Final_Project_Group6.DAL
             return _db.Projects.Include(p => p.CreatedBy).Include(p => p.AssignedTo).ThenInclude(at => at.ApplicationUser).Include(p => p.Tickets).ThenInclude(t => t.Owner).Include(p => p.Tickets).ThenInclude(t => t.TicketWatchers).ThenInclude(tw => tw.Watcher).Where(predicate).ToList();
         }
 
-        //public ICollection<Project> GetList(int offset, int count)
-        //{
-        //    return _db.Projects.Include(p => p.CreatedBy).Include(p => p.AssignedTo).Include(p => p.Tickets).ThenInclude(t => t.Owner).Include(p => p.Tickets).ThenInclude(t => t.TicketWatchers).ThenInclude(tw => tw.Watcher).Skip(offset).Take(count).ToList(); 
-        //}
-
-        //public int Count()
-        //{
-        //    return _db.Projects.Count();
-        //}
-
         public void Save()
         {
             _db.SaveChanges();

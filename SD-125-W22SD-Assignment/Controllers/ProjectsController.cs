@@ -133,17 +133,11 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "ProjectManager")]
-        public async Task<IActionResult> Create([Bind("Id, ProjectName")] Project project)
+        public async Task<IActionResult> Create([Bind("Id, ProjectName")] Project project, string userId)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest();
-            }
-
             try
             {
-                projectBL.CreateProject(project);
-
+                projectBL.CreateProject(project, userId);
                 return View(project);
             }
             catch (Exception)

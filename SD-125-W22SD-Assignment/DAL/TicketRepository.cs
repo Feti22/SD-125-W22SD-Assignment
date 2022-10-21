@@ -56,5 +56,12 @@ namespace SD_340_W22SD_Final_Project_Group6.DAL
         {
             _db.TicketWatchers.Remove(watcher);
         }
+
+        public void AddCommentToTicket(int ticketId, Comment comment)
+        {
+            Ticket ticket = _db.Tickets.Include(t => t.Comments).First(t => t.Id == ticketId);
+            ticket.Comments.Add(comment);
+            Save();
+        }
     }
 }
