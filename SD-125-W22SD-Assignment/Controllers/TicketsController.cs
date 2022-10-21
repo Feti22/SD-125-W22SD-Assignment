@@ -83,9 +83,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
             return View();
         }
 
-        // POST: Tickets/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "ProjectManager")]
@@ -129,24 +127,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
             return View(ticket);
         }
 
-        //[Authorize(Roles = "ProjectManager")]
-        //public async Task<IActionResult> RemoveAssignedUser(string id, int ticketId)
-        //{
-        //    if (id == null)
-        //    {
-        //        return NotFound();
-        //    }
-        //    Ticket currTicket = ticketBL.GetTicket(ticketId);
-        //    ApplicationUser currUser = await userBL.GetUser(id);
-        //    currTicket.Owner = currUser;
-        //    ticketBL.UpdateTicket(currTicket);
-
-        //    return RedirectToAction("Edit", new { id = ticketId });
-        //}
-
-        // POST: Tickets/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "ProjectManager")]

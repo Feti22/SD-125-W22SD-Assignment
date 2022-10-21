@@ -23,6 +23,7 @@ namespace ApplicationUnitTesting
 
         public TicketBLLTests()
         {
+            
             var projectData = new List<Project>
             {
                 new Project{Id = 1, ProjectName = "Project 1"},
@@ -58,6 +59,7 @@ namespace ApplicationUnitTesting
             ticketMockDbSet.As<IQueryable<Ticket>>().Setup(m => m.ElementType).Returns(ticketData.ElementType);
             ticketMockDbSet.As<IQueryable<Ticket>>().Setup(m => m.GetEnumerator()).Returns(() => ticketData.GetEnumerator());
             ticketMockDbSet.Setup(d => d.Add(It.IsAny<Ticket>())).Callback<Ticket>((s) => initialTicketData.Add(s));
+            ticketMockDbSet.Setup(d => d.Remove(It.IsAny<Ticket>())).Callback<Ticket>((s) => initialTicketData.Remove(s));
 
             var ticketMockContext = new Mock<ApplicationDbContext>();
             ticketMockContext.Setup(m => m.Tickets).Returns(ticketMockDbSet.Object);
@@ -116,8 +118,41 @@ namespace ApplicationUnitTesting
         {
             Assert.ThrowsException<NullReferenceException>(() =>
             {
-                ticketBusinessLogic.GetTicketById(10);
+                ticketBusinessLogic.GetTicketById(4);
             });
-        }        
+        }
+        [DataRow(3)]
+        [TestMethod]
+        public void GetAllTickets(int expectedTotal)
+        {
+            int actualCount = ticketBusinessLogic.GetAllTickets().Count;
+            Assert.AreEqual(expectedTotal, actualCount);
+        }
+
+        [DataRow(1)]
+        [TestMethod]
+        public void GetCommentById_ValidInput(int expectedId)
+        {
+            int actualId = commentBusinessLogic.GetCommentById(1).Id;
+            Assert.AreEqual(expectedId, actualId);
+        }
+
+        [DataRow(2)]
+        [TestMethod]
+        public void DeleteTicket(int expectedCount)
+        {
+
+            ticketBusinessLogic.DeleteTicket(1);
+            Assert.AreEqual(expectedCount, ticketBusinessLogic.GetAllTickets().Count);
+        }
+        
+        [TestMethod]
+        public void DeleteTicket_InvalidInput_ThrowNullExceptionIfTicketNotFound()
+        {
+            Assert.ThrowsException<ArgumentException>(() =>
+            {
+                ticketBusinessLogic.DeleteTicket(5);
+            });
+        }
     }
 }

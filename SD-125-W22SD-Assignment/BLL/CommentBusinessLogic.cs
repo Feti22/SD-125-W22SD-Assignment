@@ -31,5 +31,15 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
             _commentRepo.Update(comment);
             _commentRepo.Save();
         }
+
+        public List<Comment> GetAllComments()
+        {
+            return _commentRepo.GetAll().ToList();
+        }
+
+        public Comment GetCommentById(int id)
+        {
+            return _commentRepo.GetById(id);
+        }
     }
 }
