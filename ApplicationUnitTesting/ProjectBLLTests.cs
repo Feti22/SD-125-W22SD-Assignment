@@ -6,6 +6,8 @@ using SD_340_W22SD_Final_Project_Group6.BLL;
 using SD_340_W22SD_Final_Project_Group6.DAL;
 using SD_340_W22SD_Final_Project_Group6.Data;
 using SD_340_W22SD_Final_Project_Group6.Models;
+using System.Reflection;
+using System.Security.Claims;
 
 namespace ApplicationUnitTesting
 {
@@ -38,9 +40,9 @@ namespace ApplicationUnitTesting
 
             var projects = new List<Project>
                 {
-                    new Project{ Id = 1, ProjectName = "FirstProject" },
-                    new Project{ Id = 2, ProjectName = "SecondProject" },
-                    new Project{ Id = 3, ProjectName = "ThirdProject" },
+                    new Project{ Id = 1, ProjectName = "FirstProject" ,AssignedTo = new HashSet<UserProject>()},
+                    new Project{ Id = 2, ProjectName = "SecondProject" ,AssignedTo = new HashSet<UserProject>()},
+                    new Project{ Id = 3, ProjectName = "ThirdProject" , AssignedTo = new HashSet<UserProject>()},
                 }.AsQueryable();
 
             var MockProject = new Mock<DbSet<Project>>();
@@ -54,7 +56,7 @@ namespace ApplicationUnitTesting
             projMockContext.Setup(m => m.Projects).Returns(MockProject.Object);
 
             projectBusinessLogic = new ProjectBusinessLogic(new ProjectRepository(projMockContext.Object), ticketRepository, userManager);
-        }               
+        }
 
         [DataRow(1)]
         [TestMethod]
@@ -84,5 +86,61 @@ namespace ApplicationUnitTesting
             Assert.AreEqual(expectedTotal, actualCount);
         }
 
+        [DataRow(1, 1 , 3)]
+        [TestMethod]
+        public async void CreateProject_ValidInput(int userId, int projectId, int expectedTotal)
+        {
+            ClaimsPrincipal user = new ClaimsPrincipal();
+            Project project = new Project();
+            projectBusinessLogic.CreateProject(user,project,new List<string>() {"1","2"});
+            int actualCount = projectBusinessLogic.GetAllProjects().Count;
+
+            Assert.AreEqual(expectedTotal, actualCount);
+        }
+
+        [DataRow(1, 4, 3)]
+        [TestMethod]
+        public async void CreateProject_InValidInput_ReturnNullWhenNoIdMatch(int userId, int projectId, int expectedTotal)
+        {
+            ClaimsPrincipal user = new ClaimsPrincipal();
+            Project project = new Project();
+            Assert.ThrowsException<NullReferenceException>(() =>
+            {
+                projectBusinessLogic.CreateProject(user, project, new List<string>() { "1", "2" });
+            });
+        }
+
+        [DataRow(3)]
+        [TestMethod]
+        public void GetCompletedProjects(int expectedTotal)
+        {
+            int actualCount = projectBusinessLogic.GetCompletedProjects().Count;
+            
+            Assert.AreEqual(actualCount, expectedTotal);
+        }
+
+        //[DataRow(1, 3)]
+        //[TestMethod]
+        //public async Task AssignUsers_ValidInput(int projectId, int expectedTotal)
+        //{
+        //    List<string> usersAssignedId = new List<string> { "1", "2" };
+        //    await projectBusinessLogic.AssignUsers(projectId, usersAssignedId);
+        //    Project project = projectBusinessLogic.GetProjectById(projectId);
+        //    int actualCount = project.AssignedTo.Count;
+
+        //    Assert.AreEqual(expectedTotal, actualCount);
+        //}
+
+        //[DataRow(1, 3)]
+        //[TestMethod]
+        //public async Task AssignUsers_ValidInput_ThrowNullReferenceException(int projectId, int expectedTotal)
+        //{
+        //    List<string> usersAssignedId = new List<string> { "1", "2" };
+        //    await projectBusinessLogic.AssignUsers(projectId, usersAssignedId);
+        //    Assert.ThrowsException<NullReferenceException>(() =>
+        //    {
+        //        projectBusinessLogic.AssignUsers(projectId, new List<string>() { "1", "2" });
+        //    });
+        //}
     }
 }
