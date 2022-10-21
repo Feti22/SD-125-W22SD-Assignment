@@ -10,6 +10,8 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
         private readonly ProjectRepository _projectRepo;
         private readonly TicketRepository _ticketRepo;
         private readonly UserManager<ApplicationUser> _userManager;
+        private ProjectRepository projectRepository;
+        private UserManager<object> userManager;
 
         public ProjectBusinessLogic(ProjectRepository projectRepository, TicketRepository ticketRepository, UserManager<ApplicationUser> userManager)
         {

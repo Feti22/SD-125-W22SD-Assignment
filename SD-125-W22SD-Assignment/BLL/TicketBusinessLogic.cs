@@ -21,7 +21,14 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
 
         public Ticket? GetTicketById(int id)
         {
-            return _ticketRepo.GetById(id);
+            try
+            {
+                return _ticketRepo.GetById(id);
+            }
+            catch
+            {
+                throw new NullReferenceException("No ticket found with this Id");
+            }
         }
 
         public List<Ticket> GetAllTickets()
